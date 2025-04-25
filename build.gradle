@@ -1,56 +1,73 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.4'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java' // Java 프로젝트로 설정
+    id 'org.springframework.boot' version '3.4.4' // Spring Boot 플러그인
+    id 'io.spring.dependency-management' version '1.1.7' // 의존성 버전 자동 관리
 }
 
-group = 'securityJwtDsl'
-version = '0.0.1-SNAPSHOT'
+group = 'securityJwtDsl' // Maven group ID
+version = '0.0.1-SNAPSHOT' // 버전
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17) // Java 17 명시적 사용
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor // 컴파일 전용 설정에 annotationProcessor 확장
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral() // Maven 중앙 저장소에서 의존성 가져옴
 }
 
 dependencies {
-	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    // 🔐 QueryDSL을 위한 JPA 메타데이터 인식용 (컴파일 시 Entity 인식 필수)
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+    annotationProcessor 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+
+    // 🔍 QueryDSL 의존성 및 APT 설정 (jakarta 기반 JPA)
+    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+    annotationProcessor 'com.querydsl:querydsl-apt:5.0.0:jakarta'
+
+    // 📦 기본 Spring Boot 의존성들
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA + Hibernate
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc' // JDBC 기반 접근
+    implementation 'org.springframework.boot:spring-boot-starter-security' // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-validation' // @Valid 등 Bean Validation
+    implementation 'org.springframework.boot:spring-boot-starter-web' // REST API 및 MVC 기능
+
+    // 🔐 JWT 관련 의존성 (Token 생성/파싱)
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5' // jackson으로 claim 파싱
+
+    // 📘 Swagger/OpenAPI 문서 자동화
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	annotationProcessor 'com.querydsl:querydsl-apt:5.0.0:jakarta'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // 🔧 Lombok (Getter/Setter/Builder 등 자동 생성)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // 🧪 테스트 관련 의존성
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// ✅ JUnit 5 사용 선언
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
 
-
+// ✅ QueryDSL Q타입 클래스가 생성되는 경로 지정
 sourceSets {
     main.java.srcDirs += 'build/generated'
 }
 
+// ✅ APT가 생성한 소스를 build/generated 경로에 저장
 tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorGeneratedSourcesDirectory = file("build/generated")
-}  
+}

@@ -2,6 +2,7 @@ package SecurityJwtDsl.jwt;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,12 +23,17 @@ public class TokenProvider {
 		this.key = Keys.hmacShaKeyFor(secret.getBytes());
 	}
 
-	public String createToken(String email, long tokenValidity) {
-		Date now = new Date();
-		Date expiry = new Date(now.getTime() + tokenValidity);
+	public String createToken(String email, List<String> roles, long tokenValidity) { // 고유 식별자, 권한, 만료시간(프로젝트때 수정)
+	    Date now = new Date();
+	    Date expiry = new Date(now.getTime() + tokenValidity);
 
-		return Jwts.builder().setSubject(email).setIssuedAt(now).setExpiration(expiry)
-				.signWith(key, SignatureAlgorithm.HS256).compact();
+	    return Jwts.builder()
+	        .setSubject(email) // email은 여전히 subject로
+	        .claim("roles", roles) // roles는 커스텀 claim으로 추가
+	        .setIssuedAt(now)
+	        .setExpiration(expiry)
+	        .signWith(key, SignatureAlgorithm.HS256)
+	        .compact();
 	}
 
 	public boolean validateToken(String token) {
