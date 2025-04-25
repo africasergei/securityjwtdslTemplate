@@ -37,35 +37,21 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-          .cors(withDefaults())
-          .csrf(csrf -> {
-              // CsrfToken 쿠키 저장소 생성 (HttpOnly=false)
-              CookieCsrfTokenRepository repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
-              // deprecated setSecure 대신 커스터마이저로 Secure, SameSite 설정
-              repo.setCookieCustomizer(builder ->
-                  builder
-                    .secure(true)                 // HTTPS 전용 전송
-                    .sameSite("Strict")           // SameSite=Strict
-              );
-              csrf
-                .csrfTokenRepository(repo)
-                .ignoringRequestMatchers( // 밑의 URL의 해당 메소드로 들어온 요청은 토큰 검사 제외(프로젝트시 수정 필요)
-                  new AntPathRequestMatcher("/member/login", "POST"), 
-                  new AntPathRequestMatcher("/member/logout", "POST")
-                );
-          })
-            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안쓸거라 세션 안쓴다고 명시함
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // 안에 들어있는 URL로 들어온 요청에 대해선 인증검사 안함(프로젝트시 수정 필요)
-                .anyRequest().authenticated()
+    	
+    	http
+          .cors(withDefaults())  // 밑에서 CorsConfigurationSource 설정 했으니 기본값 쓰겠다는 의미
+          .csrf(config -> config.disable()) // 쿠키 기반 인증이 아니니 csrf 방어 하지 않음
+          .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안쓸거라 세션 안쓴다고 명시함
+          .authorizeHttpRequests(auth -> auth
+        		  .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // 안에 들어있는 URL로 들어온 요청에 대해선 인증검사 안함(프로젝트시 수정 필요)
+        		  .anyRequest().authenticated() // 위에 명시된 URL을 제외한 어떠한 요청도 인증검사 수행
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .accessDeniedHandler(customAccessDeniedHandler)
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); 
+    	 // UsernamePasswordAuthenticationFilter.class 보다 앞서서 jwtAuthenticationFilter 수행
         return http.build();
     }
     
@@ -76,11 +62,10 @@ public class SecurityConfig {
             "http://localhost:3000"                  // 허용할 프론트 주소, 실 배포중에는 실제 도메인 작성 (프로젝트시 수정 필요)
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));         // 모든 헤더 허용
-        config.setAllowCredentials(true);               // 쿠키, 인증정보 허용
+        config.setAllowedHeaders(List.of("Content-Type", "Authorization"));         // 바디의 형태, jwt 정보를 받아야하니 이 두개의 헤더만 허용
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); 
+        source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 위 cors 정책을 적용
         return source;
     }
 
